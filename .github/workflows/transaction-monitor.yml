@@ -1,0 +1,107 @@
+name: MFL Transaction Monitor
+
+on:
+  schedule:
+    # Run every hour during active periods
+    # Thursday 8PM to Monday 10PM EST (UTC-5)
+    # Skip 12AM-9AM daily
+    # Cron format: minute hour day month day-of-week (UTC time)
+    - cron: '0 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 * * 4'  # Thursday (UTC)
+    - cron: '0 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 * * 5'  # Friday (UTC)
+    - cron: '0 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 * * 6'  # Saturday (UTC)
+    - cron: '0 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 * * 0'  # Sunday (UTC)
+    - cron: '0 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 * * 1'  # Monday (UTC)
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Check if within active hours
+      id: check-time
+      run: |
+        python -c "
+        import datetime
+        import pytz
+        
+        # Get current time in EST
+        est = pytz.timezone('America/New_York')
+        now = datetime.datetime.now(est)
+        current_time = now.time()
+        current_weekday = now.weekday()  # 0=Monday, 6=Sunday
+        
+        # Check if we're in the skip period (12AM to 9AM)
+        skip_start = datetime.time(0, 0)  # 12:00 AM
+        skip_end = datetime.time(9, 0)    # 9:00 AM
+        
+        if skip_start <= current_time <= skip_end:
+            print('SKIP=true')
+            print('REASON=Within skip period (12AM-9AM)')
+            exit(0)
+        
+        # Check if we're in the active period
+        # Thursday (3) 8PM to Monday (0) 10PM
+        active_start_day = 3  # Thursday
+        active_end_day = 0    # Monday
+        active_start_time = datetime.time(20, 0)  # 8:00 PM
+        active_end_time = datetime.time(22, 0)    # 10:00 PM
+        
+        is_active = False
+        
+        if current_weekday == active_start_day and current_time >= active_start_time:
+            is_active = True
+        elif current_weekday == active_end_day and current_time <= active_end_time:
+            is_active = True
+        elif active_start_day < current_weekday < active_end_day:
+            is_active = True
+        elif current_weekday == 4 or current_weekday == 5 or current_weekday == 6:  # Fri, Sat, Sun
+            is_active = True
+        
+        if is_active:
+            print('SKIP=false')
+            print('REASON=Within active monitoring period')
+        else:
+            print('SKIP=true')
+            print('REASON=Outside active monitoring period')
+        "
+        
+    - name: Run transaction monitor
+      if: steps.check-time.outputs.SKIP == 'false'
+      env:
+        MFL_LEAGUE_ID: ${{ secrets.MFL_LEAGUE_ID }}
+        MFL_API_KEY: ${{ secrets.MFL_API_KEY }}
+        MFL_YEAR: ${{ secrets.MFL_YEAR }}
+        ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+      run: |
+        echo "Running transaction monitor at $(date)"
+        python main.py --once
+        
+    - name: Skip message
+      if: steps.check-time.outputs.SKIP == 'true'
+      run: |
+        echo "Skipping transaction check: ${{ steps.check-time.outputs.REASON }}"
+        
+    - name: Upload logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: error-logs
+        path: |
+          *.log
+          transaction_data.json

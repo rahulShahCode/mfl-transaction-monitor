@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  mfl-monitor:
+    build: .
+    container_name: mfl-transaction-monitor
+    restart: unless-stopped
+    environment:
+      - MFL_LEAGUE_ID=${MFL_LEAGUE_ID}
+      - MFL_API_KEY=${MFL_API_KEY}
+      - MFL_YEAR=${MFL_YEAR}
+      - ODDS_API_KEY=${ODDS_API_KEY}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "from src.mfl_monitor.utils.config import Config; exit(0 if Config.validate() else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
