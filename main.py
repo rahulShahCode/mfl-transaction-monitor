@@ -104,9 +104,9 @@ Examples:
     if args.once or args.force:
         asyncio.run(run_single_check(force=args.force))
     else:
-        # Run the scheduler
-        scheduler = TransactionScheduler()
-        scheduler.schedule_checks()
+        print("Use --once or --force to run the monitor")
+        print("For continuous monitoring, use GitHub Actions")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

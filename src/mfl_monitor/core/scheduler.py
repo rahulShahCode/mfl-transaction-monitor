@@ -2,8 +2,6 @@
 Transaction scheduling and time management
 """
 
-import schedule
-import time
 import asyncio
 from datetime import datetime, time
 import pytz
@@ -58,23 +56,6 @@ class TransactionScheduler:
             await self.analyzer.run_analysis()
         else:
             print(f"Skipping check at {datetime.now()} - outside active hours")
-    
-    def schedule_checks(self):
-        """Schedule the transaction checks"""
-        schedule.every().hour.do(lambda: asyncio.run(self.run_check()))
-        
-        print("Transaction monitor scheduled to run every hour")
-        print(f"Active period: {Config.SCHEDULE_START_DAY} {Config.SCHEDULE_START_TIME} to {Config.SCHEDULE_END_DAY} {Config.SCHEDULE_END_TIME}")
-        print(f"Skip period: {Config.SKIP_START_TIME} to {Config.SKIP_END_TIME}")
-        print("Starting scheduler...")
-        
-        # Run initial check
-        asyncio.run(self.run_check())
-        
-        # Keep the scheduler running
-        while True:
-            schedule.run_pending()
-            time.sleep(60)
     
     def run_once(self):
         """Run a single check immediately (useful for testing)"""
