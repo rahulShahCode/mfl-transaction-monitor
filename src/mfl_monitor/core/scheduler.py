@@ -39,15 +39,19 @@ class TransactionScheduler:
             return False
         
         # Check if we're in the active period
-        if start_day <= current_weekday <= end_day:
-            if current_weekday == start_day and current_time >= start_time:
-                return True
-            elif current_weekday == end_day and current_time <= end_time:
-                return True
-            elif start_day < current_weekday < end_day:
-                return True
+        # Thursday (3) 8PM to Monday (0) 10PM
+        is_active = False
         
-        return False
+        if current_weekday == start_day and current_time >= start_time:
+            is_active = True
+        elif current_weekday == end_day and current_time <= end_time:
+            is_active = True
+        elif start_day < current_weekday < end_day:
+            is_active = True
+        elif current_weekday == 4 or current_weekday == 5 or current_weekday == 6:  # Fri, Sat, Sun
+            is_active = True
+        
+        return is_active
     
     async def run_check(self, force=False):
         """Run a single transaction check"""
