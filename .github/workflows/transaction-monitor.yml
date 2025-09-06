@@ -32,7 +32,7 @@ jobs:
         pip install -r requirements.txt
         
     - name: Check if within active hours
-      id: check-time
+      id: checktime
       run: |
         python -c "
         import datetime
@@ -80,7 +80,7 @@ jobs:
         "
         
     - name: Run transaction monitor
-      if: steps['check-time'].outputs.SKIP == 'false'
+      if: steps.checktime.outputs.SKIP == 'false'
       env:
         MFL_LEAGUE_ID: ${{ secrets.MFL_LEAGUE_ID }}
         MFL_API_KEY: ${{ secrets.MFL_API_KEY }}
@@ -93,9 +93,9 @@ jobs:
         python main.py --once
         
     - name: Skip message
-      if: steps['check-time'].outputs.SKIP == 'true'
+      if: steps.checktime.outputs.SKIP == 'true'
       run: |
-        echo "Skipping transaction check: ${{ steps['check-time'].outputs.REASON }}"
+        echo "Skipping transaction check: ${{ steps.checktime.outputs.REASON }}"
         
     - name: Upload logs on failure
       if: failure()
