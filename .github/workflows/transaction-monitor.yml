@@ -49,8 +49,10 @@ jobs:
         skip_end = datetime.time(9, 0)    # 9:00 AM
         
         if skip_start <= current_time <= skip_end:
-            print('SKIP=true')
-            print('REASON=Within skip period (12AM-9AM)')
+            import os
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('SKIP=true\n')
+                f.write('REASON=Within skip period (12AM-9AM)\n')
             exit(0)
         
         # Check if we're in the active period
@@ -71,12 +73,15 @@ jobs:
         elif current_weekday == 4 or current_weekday == 5 or current_weekday == 6:  # Fri, Sat, Sun
             is_active = True
         
+        import os
         if is_active:
-            print('SKIP=false')
-            print('REASON=Within active monitoring period')
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('SKIP=false\n')
+                f.write('REASON=Within active monitoring period\n')
         else:
-            print('SKIP=true')
-            print('REASON=Outside active monitoring period')
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('SKIP=true\n')
+                f.write('REASON=Outside active monitoring period\n')
         "
         
     - name: Run transaction monitor
