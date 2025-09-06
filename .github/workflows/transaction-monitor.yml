@@ -44,6 +44,10 @@ jobs:
         current_time = now.time()
         current_weekday = now.weekday()  # 0=Monday, 6=Sunday
         
+        print(f'DEBUG: Current NY time: {now}')
+        print(f'DEBUG: Current weekday: {current_weekday} (0=Mon, 6=Sun)')
+        print(f'DEBUG: Current time: {current_time}')
+        
         # Check if we're in the skip period (12AM to 9AM)
         skip_start = datetime.time(0, 0)  # 12:00 AM
         skip_end = datetime.time(9, 0)    # 9:00 AM
@@ -75,10 +79,12 @@ jobs:
         
         import os
         if is_active:
+            print('DEBUG: Decision - SKIP=false (within active period)')
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('SKIP=false\n')
                 f.write('REASON=Within active monitoring period\n')
         else:
+            print('DEBUG: Decision - SKIP=true (outside active period)')
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('SKIP=true\n')
                 f.write('REASON=Outside active monitoring period\n')
